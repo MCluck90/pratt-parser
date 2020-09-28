@@ -12,15 +12,15 @@ export const expressionBindingPower = (
   minBindingPower: number
 ): S => {
   let lhs = matchToken<S>(lexer.next(), {
-    Atom: (token) => S.Atom(token.value),
-    Op: (token) => {
-      if (token.value === '(') {
+    [TokenType.Atom]: (atom) => S.Atom(atom),
+    [TokenType.Op]: (op) => {
+      if (op === '(') {
         const lhs = expressionBindingPower(lexer, 0)
         const next = lexer.next()
         return matchToken<S>(next, {
-          Op: (token) => {
-            if (token.value !== ')') {
-              throw new Error(`Bad op: ${token.value}`)
+          [TokenType.Op]: (op2) => {
+            if (op2 !== ')') {
+              throw new Error(`Bad op: ${op2}`)
             }
             return lhs
           },
@@ -28,7 +28,6 @@ export const expressionBindingPower = (
         })
       }
 
-      const op = token.value
       const [, rightBindingPower] = prefixBindingPower(op)
       const rhs = expressionBindingPower(lexer, rightBindingPower)
       return S.Cons(op, [rhs])
@@ -43,7 +42,7 @@ export const expressionBindingPower = (
     }
 
     const op = matchToken<string>(next, {
-      Op: (token) => token.value,
+      [TokenType.Op]: (op) => op,
       _: badToken,
     })
 

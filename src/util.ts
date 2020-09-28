@@ -23,21 +23,31 @@ export const todo = <T>(): T => {
   throw new Error('not yet implemented')
 }
 
-type CreateTokenMatch<TType, TResult> = (
-  token: Token & { type: TType }
+type TokenWithValue<T = Token> = T extends { value: any } ? T : never
+type TokenTypeWithValue = TokenWithValue['type']
+
+type TokenValue<
+  TTokenType extends TokenTypeWithValue,
+  TToken = Token & { type: TTokenType }
+> = TToken extends { value: infer R } ? R : never
+
+type CreateTokenMatch<TType extends TokenTypeWithValue, TResult> = (
+  value: TokenValue<TType>
 ) => TResult
+
 type TokenPattern<T> = {
-  Atom?: CreateTokenMatch<TokenType.Atom, T>
-  Op?: CreateTokenMatch<TokenType.Op, T>
-  Eof?: CreateTokenMatch<TokenType.Eof, T>
+  [K in TokenTypeWithValue]?: CreateTokenMatch<K, T>
+} & {
   _: (token: Token) => T
 }
 
 export const matchToken = <T>(token: Token, pattern: TokenPattern<T>): T => {
-  const tokenTypeName = TokenType[token.type]
-  const match = pattern[tokenTypeName]
+  const match = pattern[token.type]
   if (match) {
-    return match(token)
+    if ('value' in token) {
+      return match(token.value)
+    }
+    return match()
   }
 
   return pattern._(token)
